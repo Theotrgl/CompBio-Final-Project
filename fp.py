@@ -1,51 +1,53 @@
+import nglview as nv
+from bs4 import BeautifulSoup
 import os
-import gzip
-from Bio import PDB
 
+exit = False
 
-def load_specific_file(folder_path):
-    # List all files in the folder
-    files = os.listdir(folder_path)
-    pdb_files = [f for f in files if f.endswith('.pdb.gz')]
+folder_path = "./PDB_Files"
+while exit == False:
+    pdb_id = input("Please Input a valid PDB ID to query: ")
+    
+    if pdb_id.lower() == "exit":
+        print("Successfully exitted!!")
+        exit_loop = True
+        break
 
-    # Display available files to the user
-    print("Available files:")
-    for i, file_name in enumerate(pdb_files):
-        print(f"{i + 1}. {file_name}")
+    if os.path.exists(folder_path) and os.path.isdir(folder_path):
+        # Check if the given_filename exists in the folder
+        file_exists = pdb_id in os.listdir(folder_path)
+        if file_exists:
+            # Create an NGLview widget instance
+            view = nv.show_structure_file(f"./PDB_Files/{pdb_id.lower()}.pdb")
 
-    # Prompt user to select a file
-    file_index = int(input("Enter the index of the file to load: ")) - 1
+            # Save the visualization to an HTML file
+            view.add_component(f"./PDB_Files/{pdb_id.lower()}.pdb")  # Add the component again to ensure it's loaded
+            # view._set_size("600px", "400px")  # Set size (optional)
 
-    # Check if the index is valid
-    if 0 <= file_index < len(pdb_files):
-        selected_file = pdb_files[file_index]
-        file_path = os.path.join(folder_path, selected_file)
+            # Export the widget as an HTML file
+            filename = "protein_structure.html"
+            nv.write_html(filename, [view])
+            print(f"Visualization saved to {filename}")
 
-        # Decompress the selected file
-        with gzip.open(file_path, 'rb') as f_in:
-            # Remove the '.gz' extension to get the file name without compression
-            decompressed_file_path = file_path[:-3]
-            with open(decompressed_file_path, 'wb') as f_out:
-                f_out.write(f_in.read())
+            with open(filename, 'r') as file:
+                html_content = file.read()
 
-        # Load the decompressed file using Biopython's PDB module
-        parser = PDB.PDBParser(QUIET=True)
-        structure = parser.get_structure('selected_structure', decompressed_file_path)
+            soup = BeautifulSoup(html_content, 'html.parser')
 
-        # Process the structure (example: print chain information)
-        for model in structure:
-            for chain in model:
-                print(f"Chain {chain.get_id()} in the selected structure")
+            title_element = soup.find(class_='title')
+            if title_element:
+                title_element.string = 'New Title'
 
-        # Clean up: Remove the decompressed file
-        os.remove(decompressed_file_path)
+            # Save the modified content back to the file
+            with open('new_html_file.html', 'w') as file:
+                file.write(str(soup))
 
-        return structure
+            if os.path.exists(filename):
+                os.remove(filename)
+                print(f"{filename} has been deleted.")
+            else:
+                print(f"{filename} does not exist.")
+        else:
+            print(f"{pdb_id} does not exist in our database or is an invalid PDB ID!!")
     else:
-        print("Invalid index. Please select a valid file index.")
-
-# Provide the path to your PDB_Files folder containing .pdb.gz files
-folder_path = 'PDB_Files'
-
-# Call the function with the folder path to load a specific file based on user input
-load_specific_file(folder_path)
+        print(f"{folder_path} does not exist or is not a directory.")
