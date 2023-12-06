@@ -90,6 +90,7 @@ def search_codon(codon_counts, codon):
 def main():
     global exit
     folder_path = "./PDB_Files"
+    template_folder = "templates"
     while exit == False:
         pdb_id = input("Please Input a valid PDB ID to query: ")
         print(pdb_id.lower())
@@ -112,7 +113,7 @@ def main():
                 codon_count = count_codons(amino_acid)
                 view.add_component(file_path)  # Add the component again to ensure it's loaded
                 # Export the widget as an HTML file
-                filename = f"{pdb_id.lower()}_protein_structure.html"
+                filename = os.path.join(template_folder, f"{pdb_id.lower()}_protein_structure.html")
                 nv.write_html(filename, [view])
                 print(f"Visualization saved to {filename}")
                 # Save the visualization to an HTML file
@@ -122,14 +123,31 @@ def main():
                 soup = BeautifulSoup(html_content, 'html.parser')
                 new_div = soup.new_tag('div')
                 new_div['class'] = 'new-component'
+                data = soup.new_tag('p')
+                data['class'] = 'data'
+                data.string = f'Molecular Weight: {molecular_weight}\nAmino Acid Structure: {amino_acid}\nCodon Count: {codon_count}'
+                new_p = soup.new_tag('p')
+                new_p['class'] = 'test'
+                new_p.string = '{{amino_acid}}'
+                # Create the form tag
                 form_tag = soup.new_tag('form', action='/', method='post')
+
+                # Create the input tag
                 input_tag = soup.new_tag('input')
-                button_tag = soup.new_tag('button', type='submit')
+                input_tag['type'] = 'text'
+                input_tag['name'] = 'input_tag'
+
+                # Create the button tag
+                button_tag = soup.new_tag('button')
+                button_tag['type'] = 'submit'
                 button_tag.string = 'Submit'
-                # new_p = soup.new_tag('p')
-                # new_p['class'] = 'test'
-                # new_p.string = '{{amino_acid}}'
-                # new_div.string = f'Molecular Weight: {molecular_weight}\nAmino Acid Structure: {amino_acid}\nCodon Count: {codon_count}'
+
+                # Append the input and button tags to the form tag
+                form_tag.append(input_tag)
+                form_tag.append(button_tag)
+
+                # Append the form tag to the soup (document)
+                soup.append(form_tag)
                 title_element = soup.find(class_='title')
                 if title_element:
                     title_element.string = 'New Title'
@@ -139,13 +157,12 @@ def main():
                     existing_element.append(form_tag)
                 elem = soup.find(class_ = 'new-component')
                 if elem:
-                    elem.append(input_tag)
-                    elem.append(button_tag)
-                # find_new_div = soup.find(class_ = 'new-component')
-                # if find_new_div:
-                #     find_new_div.append(new_p)
+                    elem.append(new_p)
+                    elem.append(data)
+                    elem.append(form_tag)
                 # Save the modified content back to the file
-                with open(f'new-{pdb_id.lower()}_html_file.html', 'w') as file:
+                new_filename = os.path.join(template_folder, f"new-{pdb_id.lower()}_html_file.html")
+                with open(new_filename, 'w') as file:
                     file.write(str(soup))
                 
                 if os.path.exists(filename):

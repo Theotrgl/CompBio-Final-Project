@@ -6,7 +6,7 @@ app = Flask(__name__)
 def index():
     if request.method == 'POST':
         # Handle the form submission here
-        submitted_data = request.form['input_name']  # Change 'input_name' to the actual name of your input field
+        submitted_data = request.form['input_tag']  # Change 'input_name' to the actual name of your input field
         # Process the submitted data or perform any required actions
         print("Submitted data:", submitted_data)  # You can perform any action with the submitted data here
         return "Form submitted successfully!"  
