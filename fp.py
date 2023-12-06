@@ -121,14 +121,26 @@ def main():
                     html_content = file.read()
 
                 soup = BeautifulSoup(html_content, 'html.parser')
+                # Create css tag in html file and append it to head tag
+                css_link = soup.new_tag('link', rel='stylesheet', href='styles.css')
+                head_tag = soup.find('head')
+                if head_tag:
+                    head_tag.append(css_link)
+
+                #Create new div component to store information of protein strand
                 new_div = soup.new_tag('div')
                 new_div['class'] = 'new-component'
+
+                # Create paragraph tag for displaying data of protein strand
                 data = soup.new_tag('p')
                 data['class'] = 'data'
                 data.string = f'Molecular Weight: {molecular_weight}\nAmino Acid Structure: {amino_acid}\nCodon Count: {codon_count}'
+
+                # Create paragraph tag for showing amino acid structure via flask
                 new_p = soup.new_tag('p')
                 new_p['class'] = 'test'
                 new_p.string = '{{amino_acid}}'
+
                 # Create the form tag
                 form_tag = soup.new_tag('form', action='/', method='post')
 
