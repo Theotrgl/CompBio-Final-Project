@@ -1,0 +1,75 @@
+/* Reset some default styles to ensure consistency */
+body, h1, h2, h3, p, div {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif; /* Use a common font for better compatibility */
+}
+
+.weight {
+    margin: 20px; /* Add some margin for better spacing */
+    padding: 20px; /* Add padding to create separation between content and container */
+    background-color: #f5f5f5; /* Light gray background color */
+    border: 1px solid #ddd; /* Add a border for better visibility */
+    border-radius: 8px; /* Round the corners for a modern look */
+    font-size: 16px; /* Set the font size for better readability */
+}
+/* Apply styles to the new-component class */
+.new-component {
+    margin: 20px; /* Add some margin for better spacing */
+    padding: 20px; /* Add padding to create separation between content and container */
+    background-color: #f5f5f5; /* Light gray background color */
+    border: 1px solid #ddd; /* Add a border for better visibility */
+    border-radius: 8px; /* Round the corners for a modern look */
+    font-size: 16px; /* Set the font size for better readability */
+    line-height: 1.6; /* Improve line spacing for readability */
+    max-width: 100%; /* Limit the width to the screen width */
+    word-wrap: break-word; /* Allow the text to break onto the next line if it's too long */
+}
+
+/* Style links */
+a {
+    color: #007bff; /* Blue color for links */
+    text-decoration: none; /* Remove default underline */
+}
+
+a:hover {
+    text-decoration: underline; /* Add underline on hover */
+}
+
+/* Style heading tags */
+h1, h2, h3 {
+    color: #333; /* Dark gray color for headings */
+    margin-bottom: 10px; /* Add some space below headings */
+}
+
+/* Style paragraphs */
+p {
+    margin-bottom: 15px; /* Add space below paragraphs */
+}
+
+/* Style code blocks */
+code {
+    font-family: 'Courier New', monospace; /* Use monospace font for code */
+    background-color: #f8f9fa; /* Light gray background for code blocks */
+    padding: 4px 8px; /* Add padding to code blocks */
+    border: 1px solid #ccc; /* Add a border for better visibility */
+    border-radius: 4px; /* Round the corners of code blocks */
+    font-size: 14px; /* Set the font size for code */
+}
+
+/* Style the external links */
+.external-link::after {
+    content: " \2014 \2192"; /* Add an arrow after external links */
+    font-size: 12px; /* Set the font size for the arrow */
+}
+
+/* Responsive styles for smaller screens */
+@media (max-width: 600px) {
+    .new-component {
+        margin: 10px; /* Adjust margin for smaller screens */
+        padding: 10px; /* Adjust padding for smaller screens */
+    }
+}
