@@ -122,45 +122,63 @@ def process_data():
         soup = BeautifulSoup(html_content, 'html.parser')
 
         # Create css tag in html file and append it to head tag
-        css_link = soup.new_tag('link', rel='stylesheet', href='styles.css')
+        css_link = soup.new_tag('link', rel='stylesheet', href="{{ url_for('static', filename='style.css') }}")
         head_tag = soup.find('head')
         if head_tag:
             head_tag.append(css_link)
 
-        # Create new div component to store information of protein strand
-        new_div = soup.new_tag('div')
-        new_div['class'] = 'new-component'
+        container_div = soup.new_tag('div', **{'class':'container'})
 
-        # Create paragraph tag for displaying data of protein strand
-        data = soup.new_tag('p')
-        data['class'] = 'data'
-        data.string = f'Molecular Weight: {molecular_weight}\nAmino Acid Structure: {amino_acid}\nCodon Count: {codon_count}'
+        data_types = ['Molecular Weight', 'Amino Acid Structure', 'Codon Count']
 
-        # Create the form tag
-        form_tag = soup.new_tag('form', action='/protein-data', method='post')
+        for idx, data_type in enumerate(data_types, start=1):
+            accordion_div = soup.new_tag('div', **{'class':'accordion'})
 
-        # Create the input tag
-        input_tag = soup.new_tag('input')
-        input_tag['type'] = 'text'
-        input_tag['name'] = 'codon'
+            input_checkbox = soup.new_tag('input', type='checkbox', id=f'Acc{idx}')
+            label_for_checkbox = soup.new_tag('label', **{'for':f'Acc{idx}'})
+            label_for_checkbox.string = data_type
 
-        # Create the button tag
+            chevron_down_div = soup.new_tag('div', **{'class':'fas fa-chevron-down rotate'})
+
+            content_div = soup.new_tag('div', **{'class':'content'})
+            # Replace the static content with your dynamic variables
+            if data_type == 'Molecular Weight':
+                content_div.string = f'{molecular_weight}'
+            elif data_type == 'Amino Acid Structure':
+                content_div.string = f'{amino_acid}'
+            elif data_type == 'Codon Count':
+                content_div.string = f'{codon_count}'
+
+            accordion_div.append(input_checkbox)
+            accordion_div.append(label_for_checkbox)
+            accordion_div.append(chevron_down_div)
+            accordion_div.append(content_div)
+
+            container_div.append(accordion_div)
+        
+        # Additional HTML structure
+        container2_div = soup.new_tag('div', **{'class': 'container2'})
+        box_div = soup.new_tag('div', **{'class': 'box'})
+        search_bar_div = soup.new_tag('div', **{'class': 'search-bar'})
+        form_tag = soup.new_tag('form')
+        input_tag = soup.new_tag('input', type='text', placeholder='Search')
         button_tag = soup.new_tag('button')
-        button_tag['type'] = 'submit'
-        button_tag.string = 'Submit'
+        i_tag = soup.new_tag('i', **{'class': 'fas fa-search'})
 
-        # Append the input and button tags to the form tag
+        # Append the tags to form the structure
+        button_tag.append(i_tag)
         form_tag.append(input_tag)
         form_tag.append(button_tag)
+        search_bar_div.append(form_tag)
+        box_div.append(search_bar_div)
+        container2_div.append(box_div)
 
-        # Append the form, data, and new_div tags to the appropriate elements in the document
-        if new_div:
-            new_div.append(data)
-            new_div.append(form_tag)
+        # Append the new HTML structure to the existing container_div
+        container_div.append(container2_div)
 
         existing_element = soup.find('body')
         if existing_element:
-            existing_element.append(new_div)
+            existing_element.append(container_div)
 
         # Save the modified content to a new HTML file
         with open(new_filepath, 'w') as file:

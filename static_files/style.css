@@ -1,52 +1,124 @@
-/* Add this CSS to your style.css file or include it in your HTML file */
-/* Dropdown container styles */
-.dropdown {
+body {
+    /* background-color: #333333; */
+    /* display: flex; */
+    justify-content: center;
+    height: 100vh;
+    align-items: center;
+    font-family: Arial, sans-serif;
+  }
+  .container {
+    margin-left: 10%;
+    width: 700px;
+  }
+  .container .accordion {
+    width: 100%;
+    color: white;
+    overflow: hidden;
     position: relative;
-    display: inline-block;
-}
-
-/* Dropdown toggle styles */
-.dropdown a {
-    color: #333; /* Change the color as needed */
-    text-decoration: none;
-    display: inline-block;
-    padding: 10px;
-}
-
-/* Arrow icon styles */
-.icon-arrow {
-    border: solid #333;
-    border-width: 0 2px 2px 0;
-    display: inline-block;
-    padding: 3px;
-    transform: rotate(45deg);
-    margin-left: 5px;
-}
-
-/* Dropdown menu styles */
-.dropdown-menu {
-    display: none;
+  }
+  input {
     position: absolute;
-    background-color: #f9f9f9; /* Change the background color as needed */
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    z-index: 1;
-    padding: 10px;
-    list-style: none;
-    margin: 0;
+    z-index: -1;
+  }
+  label {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px;
+    background: #ceaee8;
+    cursor: pointer;
+  }
+  label:hover {
+    background: #e7dbf0;
+  }
+  .container .accordion .content {
+    max-height: 0px;
+    padding: 0 15px;
+    color: black;
+    background: #e7dbf0;
+    transition: all 0.35s;
+    word-wrap: break-word;
+  }
+  .rotate {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    transition: 0.25s;
+  }
+  input[type="checkbox"]:checked ~ .rotate {
+    transform: rotate(-180deg);
+  }
+  input[type="checkbox"]:checked ~ .content {
+    max-height: 100vh;
+    padding: 15px;
+  }
+
+/* Basic styling for the search bar */
+.container2 {
+    width: 100%;
+    height: auto;
 }
 
-/* Show the dropdown menu on hover */
-.dropdown:hover .dropdown-menu {
-    display: block;
+.box {
+    width: 80%;
+    height: 58px;
+    background-color: #fff;
+    margin: 20px auto;
 }
 
-/* Style for individual items in the dropdown menu */
-.dropdown-menu li {
-    padding: 8px;
+.search-bar {
+    width: 55%;
+    margin: 40px auto;
+    /* line-height: 56px; */
+    position: relative
 }
 
-/* Style for links in the dropdown menu */
-.dropdown-menu li a {
-    color: #333; /* Change the color as needed */
-    text-decoration: none;
+form {
+    display: flex;
+    align-items: center;
+}
+
+input[type="text"] {
+    width: 83%;
+    height: 33px;
+    padding: 0 10px;
+    color: #000;
+    border: 0.2px solid #BEBEBE;
+    border-radius: 2px 0 0 2px;
+    z-index: 2
+  }
+  
+  input:focus {
+    border: 1.1px solid #1c62b9;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.4);
+  }
+  
+  button {
+    position: absolute;
+    width: 11%;
+    height: 33px;
+    border: 1px solid #BEBEBE;
+    border-left: 0;
+    /* top: 13px; */
+    right: 0;
+    border-radius: 0px 2px 2px 0;
+    cursor: pointer;
+    font-size: 14px;
+    text-align: center;
+    background-color: #f0f0f0;
+    z-index: 3
+  }
+
+button {
+    background-color: #ceaee8;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 5px 10px;
+    margin-left: 5px;
+    cursor: pointer;
+}
+
+/* Optional: Add hover effect to the button */
+button:hover {
+    background-color: #e7dbf0;
 }
