@@ -3,13 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Protein Visualization</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylesheet.css') }}">
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="{{ url_for('static', filename='function.js') }}"></script>
+
 </head>
 <body>
-    <h1>Welcome To </h1>
+    <!-- <h1>Welcome To </h1>
     <form action="/" method="post">
         <input type="text" name="input_name" placeholder="Enter data..." />
         <button type="submit">Submit</button>
-    </form>
+    </form> -->
+    <nav>
+        <h1>Protein Visualization</h1>
+        <ul>
+            <li>Justin Theofilus Yonathan</li>
+            <li>Pandya Limawan</li>
+        </ul>
+    </nav>
+    <div class="container">
+        <button>Click Here</button>
+    </div>
+    <div class="overlay">
+    </div>
+    <div class="main-popup">
+        <div class="popup-header">
+            <div id="popup-close-button"><a href="#"></a></div>
+            <h1>Input Protein</h1>
+        </div><!--.popup-header-->
+        <div class="popup-content">
+            <form action="/" class="form" method="post">
+                <label for="proteinid">Protein:</label>
+                <input type="text" id="proteinid" name="input_name">
+                <input type="submit" id="submit" value="Submit">
+            </form>
+        </div><!--.popup-content-->
+    </div><!--.main-popup-->
 </body>
 </html>

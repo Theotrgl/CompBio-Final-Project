@@ -5,7 +5,7 @@ from Bio.PDB import PDBParser, is_aa
 from Bio.PDB import DSSP
 from bs4 import BeautifulSoup
 import os
-app = Flask(__name__)
+app = Flask(__name__, template_folder = 'templates',static_folder = 'static_files')
 def amino_acid_to_codon():
     codon_table = {
         'A': ['GCU', 'GCC', 'GCA', 'GCG'],
@@ -93,6 +93,7 @@ def process_data():
     pdb_id = ''
     viz = ''
     template_folder = 'templates'
+    static_folder = 'static_files'
     
     if request.method == 'POST':
         pdb_id = request.form['input_name']  # Access form data for POST request
@@ -121,7 +122,7 @@ def process_data():
         soup = BeautifulSoup(html_content, 'html.parser')
 
         # Create css tag in html file and append it to head tag
-        css_link = soup.new_tag('link', rel='stylesheet', href='styles.css')
+        css_link = soup.new_tag('link', rel='stylesheet', href='style.css')
         head_tag = soup.find('head')
         if head_tag:
             head_tag.append(css_link)
