@@ -1,11 +1,12 @@
-from flask import Flask, request, render_template, redirect, url_for
+from flask import Flask, request, render_template, redirect, url_for, session
 import nglview as nv
 from Bio import PDB
 from Bio.PDB import PDBParser, is_aa
 from Bio.PDB import DSSP
 from bs4 import BeautifulSoup
 import os
-app = Flask(__name__, template_folder = 'templates',static_folder = 'static_files')
+app = Flask(__name__)
+app.secret_key = 'aksjfgaisfg917f19vf197vbsbfbf1s9VF(!&U(SB1u9bsf9B!F(bs)))'
 def amino_acid_to_codon():
     codon_table = {
         'A': ['GCU', 'GCC', 'GCA', 'GCG'],
@@ -91,9 +92,7 @@ def search_codon(codon_counts, codon):
 @app.route('/', methods=['GET', 'POST'])
 def process_data():
     pdb_id = ''
-    viz = ''
     template_folder = 'templates'
-    static_folder = 'static_files'
     
     if request.method == 'POST':
         pdb_id = request.form['input_name']  # Access form data for POST request
@@ -105,6 +104,7 @@ def process_data():
         amino_acid = extract_amino_acid_sequence(structure)
         codons = amino_acid_sequence_to_codons(amino_acid)
         codon_count = count_codons(amino_acid)
+        session['codon_count'] = codon_count
         # Handle the form submission here
         view = nv.show_structure_file(file_path)
         parser = PDBParser()
@@ -122,7 +122,7 @@ def process_data():
         soup = BeautifulSoup(html_content, 'html.parser')
 
         # Create css tag in html file and append it to head tag
-        css_link = soup.new_tag('link', rel='stylesheet', href='style.css')
+        css_link = soup.new_tag('link', rel='stylesheet', href='styles.css')
         head_tag = soup.find('head')
         if head_tag:
             head_tag.append(css_link)
@@ -137,12 +137,12 @@ def process_data():
         data.string = f'Molecular Weight: {molecular_weight}\nAmino Acid Structure: {amino_acid}\nCodon Count: {codon_count}'
 
         # Create the form tag
-        form_tag = soup.new_tag('form', action='/data', method='post')
+        form_tag = soup.new_tag('form', action='/protein-data', method='post')
 
         # Create the input tag
         input_tag = soup.new_tag('input')
         input_tag['type'] = 'text'
-        input_tag['name'] = 'input_tag'
+        input_tag['name'] = 'codon'
 
         # Create the button tag
         button_tag = soup.new_tag('button')
@@ -167,13 +167,36 @@ def process_data():
             file.write(str(soup))
 
         return redirect(url_for('protein_data'))
-
     return render_template("index.html")
 
-@app.route('/protein-data', methods=['GET'])
+@app.route('/protein-data', methods=['GET', 'POST'])
 def protein_data():
-    # Use the 'data' parameter to pass data to the new HTML file
+    if request.method == 'POST':
+        codon = request.form.get('codon', '')
+        codon_count = session.get('codon_count')
+        searchedCodon = search_codon(codon_count, codon)
+
+        new_filepath = os.path.join('templates', "protein-data.html")
+        with open(new_filepath, 'r') as file:
+            html_content = file.read()
+        
+        soup = BeautifulSoup(html_content, 'html.parser')
+
+        codon_search_result = soup.new_tag('p')
+        codon_search_result['class'] = "codon-result"
+        codon_search_result.string = f"{searchedCodon}"
+
+        existing_element = soup.find(class_='new-component')  # Assuming 'new-component' is a class
+        if existing_element:
+            existing_element.append(codon_search_result)
+
+        updated_content = str(soup)
+        with open(new_filepath, 'w') as file:
+            file.write(updated_content)
+        
+    # Always render the HTML file, irrespective of POST or GET request
     return render_template('protein-data.html')
+
 if __name__ == '__main__':
     app.run(debug=True)
 
