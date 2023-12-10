@@ -111,31 +111,29 @@ def process_data():
         viz = structure
         view.add_component(file_path)  # Add the component again to ensure it's loaded
         filepath = os.path.join(template_folder, "new_html_file.html")
-        open(filepath, 'w')
-        with open(filepath, 'r') as file:
-            html_content = file.read()
+        new_filepath = os.path.join(template_folder, "protein-data.html")
+        # open(filepath, 'w')
         nv.write_html(filepath, [view])
         print(f"Visualization saved to {filepath}")
+        with open(filepath, 'r') as file:
+            html_content = file.read()
+        
         soup = BeautifulSoup(html_content, 'html.parser')
+
         # Create css tag in html file and append it to head tag
         css_link = soup.new_tag('link', rel='stylesheet', href='styles.css')
         head_tag = soup.find('head')
         if head_tag:
             head_tag.append(css_link)
 
-        #Create new div component to store information of protein strand
+        # Create new div component to store information of protein strand
         new_div = soup.new_tag('div')
         new_div['class'] = 'new-component'
 
         # Create paragraph tag for displaying data of protein strand
         data = soup.new_tag('p')
         data['class'] = 'data'
-        data.string = 'Molecular Weight: {{molecular_weight}}\nAmino Acid Structure: {{amino_acid}}\nCodon Count: {{codon_count}}'
-
-        # Create paragraph tag for showing amino acid structure via flask
-        new_p = soup.new_tag('p')
-        new_p['class'] = 'codon-search'
-        # new_p.string = '{{searchCodon}}'
+        data.string = f'Molecular Weight: {molecular_weight}\nAmino Acid Structure: {amino_acid}\nCodon Count: {codon_count}'
 
         # Create the form tag
         form_tag = soup.new_tag('form', action='/data', method='post')
@@ -154,28 +152,27 @@ def process_data():
         form_tag.append(input_tag)
         form_tag.append(button_tag)
 
-        # Append the form tag to the soup (document)
-        soup.append(form_tag)
-        title_element = soup.find(class_='title')
-        if title_element:
-            title_element.string = 'New Title'
+        # Append the form, data, and new_div tags to the appropriate elements in the document
+        if new_div:
+            new_div.append(data)
+            new_div.append(form_tag)
+
         existing_element = soup.find('body')
         if existing_element:
             existing_element.append(new_div)
-            existing_element.append(form_tag)
-        elem = soup.find(class_ = 'new-component')
-        if elem:
-            elem.append(data)
-            elem.append(form_tag)
-            elem.append(new_p)
-        
-        return redirect(url_for('new_html_file', data = pdb_id))
+
+        # Save the modified content to a new HTML file
+        with open(new_filepath, 'w') as file:
+            file.write(str(soup))
+
+        return redirect(url_for('protein_data'))
+
     return render_template("index.html")
 
-@app.route('/new_html_file', methods=['GET'])
-def new_html_file():
+@app.route('/protein-data', methods=['GET'])
+def protein_data():
     # Use the 'data' parameter to pass data to the new HTML file
-    return render_template('new_html_file.html')
+    return render_template('protein-data.html')
 if __name__ == '__main__':
     app.run(debug=True)
 
