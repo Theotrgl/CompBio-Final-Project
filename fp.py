@@ -1,11 +1,11 @@
+from flask import Flask, request, render_template, redirect, url_for
 import nglview as nv
 from Bio import PDB
 from Bio.PDB import PDBParser, is_aa
 from Bio.PDB import DSSP
 from bs4 import BeautifulSoup
 import os
-
-exit = False
+app = Flask(__name__)
 def amino_acid_to_codon():
     codon_table = {
         'A': ['GCU', 'GCC', 'GCA', 'GCG'],
@@ -87,105 +87,98 @@ def extract_amino_acid_sequence(structure):
 
 def search_codon(codon_counts, codon):
     return codon_counts.get(codon, 0)
-def main():
-    global exit
-    folder_path = "./PDB_Files"
-    template_folder = "templates"
-    while exit == False:
-        pdb_id = input("Please Input a valid PDB ID to query: ")
-        print(pdb_id.lower())
-        file_path = f"/{pdb_id.lower()}.pdb"
-        if pdb_id.lower() == "exit":
-            print("Successfully exitted!!")
-            exit = True
-            break
 
-        if os.path.exists(folder_path) and os.path.isdir(folder_path):
-            file_path = os.path.join(folder_path, f"{pdb_id.lower()}.pdb")
-            if os.path.exists(file_path):  # Check if the file exists
-                # Create an NGLview widget instance
-                view = nv.show_structure_file(file_path)
-                parser = PDBParser()
-                structure = parser.get_structure(pdb_id.upper(), file_path)
-                molecular_weight = calculate_molecular_mass(structure)
-                amino_acid = extract_amino_acid_sequence(structure)
-                codons = amino_acid_sequence_to_codons(amino_acid)
-                codon_count = count_codons(amino_acid)
-                view.add_component(file_path)  # Add the component again to ensure it's loaded
-                # Export the widget as an HTML file
-                filename = os.path.join(template_folder, f"{pdb_id.lower()}_protein_structure.html")
-                nv.write_html(filename, [view])
-                print(f"Visualization saved to {filename}")
-                # Save the visualization to an HTML file
-                with open(filename, 'r') as file:
-                    html_content = file.read()
+@app.route('/', methods=['GET', 'POST'])
+def process_data():
+    pdb_id = ''
+    viz = ''
+    template_folder = 'templates'
+    
+    if request.method == 'POST':
+        pdb_id = request.form['input_name']  # Access form data for POST request
+        # Process the submitted data or perform actions
+        file_path = f"PDB_Files/{pdb_id.lower()}.pdb"
+        parser = PDBParser()
+        structure = parser.get_structure(pdb_id.upper(), file_path)
+        molecular_weight = calculate_molecular_mass(structure)
+        amino_acid = extract_amino_acid_sequence(structure)
+        codons = amino_acid_sequence_to_codons(amino_acid)
+        codon_count = count_codons(amino_acid)
+        # Handle the form submission here
+        view = nv.show_structure_file(file_path)
+        parser = PDBParser()
+        structure = parser.get_structure(pdb_id.upper(), file_path)
+        viz = structure
+        view.add_component(file_path)  # Add the component again to ensure it's loaded
+        filepath = os.path.join(template_folder, "new_html_file.html")
+        open(filepath, 'w')
+        with open(filepath, 'r') as file:
+            html_content = file.read()
+        nv.write_html(filepath, [view])
+        print(f"Visualization saved to {filepath}")
+        soup = BeautifulSoup(html_content, 'html.parser')
+        # Create css tag in html file and append it to head tag
+        css_link = soup.new_tag('link', rel='stylesheet', href='styles.css')
+        head_tag = soup.find('head')
+        if head_tag:
+            head_tag.append(css_link)
 
-                soup = BeautifulSoup(html_content, 'html.parser')
-                # Create css tag in html file and append it to head tag
-                css_link = soup.new_tag('link', rel='stylesheet', href='styles.css')
-                head_tag = soup.find('head')
-                if head_tag:
-                    head_tag.append(css_link)
+        #Create new div component to store information of protein strand
+        new_div = soup.new_tag('div')
+        new_div['class'] = 'new-component'
 
-                #Create new div component to store information of protein strand
-                new_div = soup.new_tag('div')
-                new_div['class'] = 'new-component'
+        # Create paragraph tag for displaying data of protein strand
+        data = soup.new_tag('p')
+        data['class'] = 'data'
+        data.string = 'Molecular Weight: {{molecular_weight}}\nAmino Acid Structure: {{amino_acid}}\nCodon Count: {{codon_count}}'
 
-                # Create paragraph tag for displaying data of protein strand
-                data = soup.new_tag('p')
-                data['class'] = 'data'
-                data.string = f'Molecular Weight: {molecular_weight}\nAmino Acid Structure: {amino_acid}\nCodon Count: {codon_count}'
+        # Create paragraph tag for showing amino acid structure via flask
+        new_p = soup.new_tag('p')
+        new_p['class'] = 'codon-search'
+        # new_p.string = '{{searchCodon}}'
 
-                # Create paragraph tag for showing amino acid structure via flask
-                new_p = soup.new_tag('p')
-                new_p['class'] = 'test'
-                new_p.string = '{{amino_acid}}'
+        # Create the form tag
+        form_tag = soup.new_tag('form', action='/data', method='post')
 
-                # Create the form tag
-                form_tag = soup.new_tag('form', action='/', method='post')
+        # Create the input tag
+        input_tag = soup.new_tag('input')
+        input_tag['type'] = 'text'
+        input_tag['name'] = 'input_tag'
 
-                # Create the input tag
-                input_tag = soup.new_tag('input')
-                input_tag['type'] = 'text'
-                input_tag['name'] = 'input_tag'
+        # Create the button tag
+        button_tag = soup.new_tag('button')
+        button_tag['type'] = 'submit'
+        button_tag.string = 'Submit'
 
-                # Create the button tag
-                button_tag = soup.new_tag('button')
-                button_tag['type'] = 'submit'
-                button_tag.string = 'Submit'
+        # Append the input and button tags to the form tag
+        form_tag.append(input_tag)
+        form_tag.append(button_tag)
 
-                # Append the input and button tags to the form tag
-                form_tag.append(input_tag)
-                form_tag.append(button_tag)
+        # Append the form tag to the soup (document)
+        soup.append(form_tag)
+        title_element = soup.find(class_='title')
+        if title_element:
+            title_element.string = 'New Title'
+        existing_element = soup.find('body')
+        if existing_element:
+            existing_element.append(new_div)
+            existing_element.append(form_tag)
+        elem = soup.find(class_ = 'new-component')
+        if elem:
+            elem.append(data)
+            elem.append(form_tag)
+            elem.append(new_p)
+        
+        return redirect(url_for('new_html_file', data = pdb_id))
+    return render_template("index.html")
 
-                # Append the form tag to the soup (document)
-                soup.append(form_tag)
-                title_element = soup.find(class_='title')
-                if title_element:
-                    title_element.string = 'New Title'
-                existing_element = soup.find('body')
-                if existing_element:
-                    existing_element.append(new_div)
-                    existing_element.append(form_tag)
-                elem = soup.find(class_ = 'new-component')
-                if elem:
-                    elem.append(new_p)
-                    elem.append(data)
-                    elem.append(form_tag)
-                # Save the modified content back to the file
-                new_filename = os.path.join(template_folder, f"new-{pdb_id.lower()}_html_file.html")
-                with open(new_filename, 'w') as file:
-                    file.write(str(soup))
-                
-                if os.path.exists(filename):
-                    os.remove(filename)
-                    print(f"{filename} has been deleted.")
-                else:
-                    print(f"{filename} does not exist.")
-            else:
-                print(f"{pdb_id} does not exist in our database or is an invalid PDB ID!!")
-        else:
-            print(f"{folder_path} does not exist or is not a directory.")
+@app.route('/new_html_file', methods=['GET'])
+def new_html_file():
+    # Use the 'data' parameter to pass data to the new HTML file
+    return render_template('new_html_file.html')
+if __name__ == '__main__':
+    app.run(debug=True)
 
-if __name__ == "__main__":
-    main()
+
+
+
