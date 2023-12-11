@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='stylesheet.css') }}">
     <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
     <script src="{{ url_for('static', filename='function.js') }}"></script>
-
 </head>
 <body>
     <!-- <h1>Welcome To </h1>
@@ -23,6 +22,9 @@
         </ul>
     </nav>
     <div class="container">
+        {% if error_message %}
+            <p>{{ error_message }}</p>
+        {% endif %}
         <button>Click Here</button>
     </div>
     <div class="overlay">
@@ -33,12 +35,14 @@
             <h1>Input Protein</h1>
         </div><!--.popup-header-->
         <div class="popup-content">
-            <form action="/" class="form" method="post">
+            <form action="/" class="form" method="post" >
                 <label for="proteinid">Protein:</label>
                 <input type="text" id="proteinid" name="input_name">
                 <input type="submit" id="submit" value="Submit">
             </form>
         </div><!--.popup-content-->
+        
     </div><!--.main-popup-->
+    
 </body>
 </html>
