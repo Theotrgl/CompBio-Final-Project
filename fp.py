@@ -146,8 +146,8 @@ def process_data():
                 content_div.string = f'{molecular_weight}'
             elif data_type == 'Amino Acid Structure':
                 content_div.string = f'{amino_acid}'
-            elif data_type == 'Codon Count':
-                content_div.string = f'{codon_count}'
+            elif data_type == 'Existing Codons':
+                content_div.string = f'{codons}'
 
             accordion_div.append(input_checkbox)
             accordion_div.append(label_for_checkbox)
@@ -160,9 +160,10 @@ def process_data():
         container2_div = soup.new_tag('div', **{'class': 'container2'})
         box_div = soup.new_tag('div', **{'class': 'box'})
         search_bar_div = soup.new_tag('div', **{'class': 'search-bar'})
-        form_tag = soup.new_tag('form')
-        input_tag = soup.new_tag('input', type='text', placeholder='Search')
-        button_tag = soup.new_tag('button')
+        form_tag = soup.new_tag('form', action='/protein-data', method='post')
+        input_tag = soup.new_tag('input', type='text', placeholder='Search Codons')
+        input_tag['name'] = 'codon'
+        button_tag = soup.new_tag('button', type='submit')
         i_tag = soup.new_tag('i', **{'class': 'fas fa-search'})
 
         # Append the tags to form the structure
@@ -204,7 +205,7 @@ def protein_data():
         codon_search_result['class'] = "codon-result"
         codon_search_result.string = f"{searchedCodon}"
 
-        existing_element = soup.find(class_='new-component')  # Assuming 'new-component' is a class
+        existing_element = soup.find(class_='search-bar')  # Assuming 'new-component' is a class
         if existing_element:
             existing_element.append(codon_search_result)
 
