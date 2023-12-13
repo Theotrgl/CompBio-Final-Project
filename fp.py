@@ -122,7 +122,8 @@ def process_data():
         else:
             parser = PDBParser()
             structure = parser.get_structure(pdb_id.upper(), file_path)
-            molecular_weight = calculate_molecular_mass(structure)
+            mw = calculate_molecular_mass(structure)
+            molecular_weight = format(mw, '3f')
             amino_acid = extract_amino_acid_sequence(structure)
             codons = amino_acid_sequence_to_codons(amino_acid)
             codon_count = count_codons(amino_acid)
