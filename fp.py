@@ -1,8 +1,10 @@
 from flask import Flask, request, render_template, redirect, url_for, session
 import nglview as nv
 from Bio import PDB
-from Bio.PDB import PDBParser, is_aa
+from Bio.PDB import PDBParser, is_aa, PPBuilder
+from Bio.SeqUtils import seq1
 from Bio.PDB import DSSP
+from Bio.SeqRecord import SeqRecord
 from bs4 import BeautifulSoup
 import os
 app = Flask(__name__, template_folder="templates", static_folder="static_files")
@@ -51,22 +53,6 @@ def count_codons(sequence):
     return codon_count
 
 
-def amino_acid_sequence_to_codons(sequence):
-    codon_table = amino_acid_to_codon()  # Use the previously defined amino_acid_to_codon function
-
-    codons = []
-    for amino_acid in sequence:
-        possible_codons = codon_table.get(amino_acid, [])
-        if possible_codons:
-            for codon in possible_codons:
-                if codon not in codons:
-                    codons.append(codon)
-    
-    return codons  # Converting the set back to a list before returning
-
-
-
-
 
 def calculate_molecular_mass(structure):
     atomic_weights = {
@@ -101,10 +87,33 @@ def extract_amino_acid_sequence(structure):
 
     return separated_amino_acids
 
+def extract_protein_title(file_path):
+    titles = []
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
 
+        for line in lines:
+            if line.startswith("TITLE"):
+                title = line.strip().split(' ', 1)[1]
+                titles.append(title)
 
-def search_codon(codon_counts, codon):
-    return codon_counts.get(codon, 0)
+    return titles if titles else None
+
+def extract_protein_chains(structure):
+    protein_sequences = {}  # Dictionary to store sequences for each chain
+
+    for model in structure:
+        for chain in model:
+            chain_id = chain.id
+            if chain_id in ['A', 'B', 'C']:  # Filter for chains A, B, and C
+                if chain_id not in protein_sequences:
+                    protein_sequences[chain_id] = ''
+
+                for residue in chain:
+                    if residue.get_id()[0] == ' ' and residue.get_resname() != "HOH":
+                        protein_sequences[chain_id] += residue.get_resname()
+
+    return protein_sequences
 
 @app.route('/', methods=['GET', 'POST'])
 def process_data():
@@ -122,12 +131,18 @@ def process_data():
         else:
             parser = PDBParser()
             structure = parser.get_structure(pdb_id.upper(), file_path)
-            mw = calculate_molecular_mass(structure)
-            molecular_weight = format(mw, '3f')
+            molecular_weight = calculate_molecular_mass(structure)
             amino_acid = extract_amino_acid_sequence(structure)
-            codons = amino_acid_sequence_to_codons(amino_acid)
+            protein = extract_protein_chains(structure)
+            protein_A = protein.get('A', None)
+            protein_B = protein.get('B', None)
+            protein_C = protein.get('C', None)
+            pdb_title = extract_protein_title(file_path)
+            mw = "{:.2f}".format(molecular_weight)
+            codons = list(set(amino_acid))
             codon_count = count_codons(amino_acid)
             session['codon_count'] = codon_count
+            session['aminoAcid'] = amino_acid
             # Handle the form submission here
             view = nv.show_structure_file(file_path)
             parser = PDBParser()
@@ -136,14 +151,16 @@ def process_data():
             view.add_component(file_path)  # Add the component again to ensure it's loaded
             filepath = os.path.join(template_folder, "new_html_file.html")
             new_filepath = os.path.join(template_folder, "protein-data.html")
-            # open(filepath, 'w')
             nv.write_html(filepath, [view])
             print(f"Visualization saved to {filepath}")
             with open(filepath, 'r') as file:
                 html_content = file.read()
             
             soup = BeautifulSoup(html_content, 'html.parser')
+            title_tag = soup.title
 
+            # Update the title content
+            title_tag.string = 'Protein-data'
             # Create css tag in html file and append it to head tag
             css_link = soup.new_tag('link', rel='stylesheet', href="{{ url_for('static', filename='style.css') }}")
             head_tag = soup.find('head')
@@ -152,8 +169,8 @@ def process_data():
 
             container_div = soup.new_tag('div', **{'class':'container'})
 
-            data_types = ['Molecular Weight', 'Amino Acid Structure', 'Existing Codons']
-
+            data_types = ['Title', 'ID', 'Molecular Weight', 'Polypeptide Chain A', 'Polypeptide Chain B', 'Polypeptide Chain C','Separated Amino Acid Structure', 'Existing Codons']
+            session['dataType'] = data_types
             for idx, data_type in enumerate(data_types, start=1):
                 accordion_div = soup.new_tag('div', **{'class':'accordion'})
 
@@ -165,9 +182,19 @@ def process_data():
 
                 content_div = soup.new_tag('div', **{'class':'content'})
                 # Replace the static content with your dynamic variables
-                if data_type == 'Molecular Weight':
-                    content_div.string = f'{molecular_weight}'
-                elif data_type == 'Amino Acid Structure':
+                if data_type == 'ID':
+                    content_div.string = f'{pdb_id.upper()}'
+                elif data_type == 'Title':
+                    content_div.string = f'{pdb_title}'
+                elif data_type == 'Polypeptide Chain A':
+                    content_div.string = f'{protein_A}'
+                elif data_type == 'Polypeptide Chain B':
+                    content_div.string = f'{protein_B}'
+                elif data_type == 'Polypeptide Chain C':
+                    content_div.string = f'{protein_C}'
+                elif data_type == 'Molecular Weight':
+                    content_div.string = f'{mw}'
+                elif data_type == 'Separated Amino Acid Structure':
                     content_div.string = f'{amino_acid}'
                 elif data_type == 'Existing Codons':
                     content_div.string = f'{codons}'
@@ -188,7 +215,9 @@ def process_data():
             input_tag['name'] = 'codon'
             button_tag = soup.new_tag('button', type='submit')
             i_tag = soup.new_tag('i', **{'class': 'fas fa-search'})
-
+            SubHeading = soup.new_tag('h3')
+            SubHeading['class'] = 'sub-heading'
+            SubHeading.string = 'Input Codon To Search'
             # Append the tags to form the structure
             button_tag.append(i_tag)
             form_tag.append(input_tag)
@@ -198,6 +227,7 @@ def process_data():
             container2_div.append(box_div)
 
             # Append the new HTML structure to the existing container_div
+            container_div.append(SubHeading)
             container_div.append(container2_div)
 
             existing_element = soup.find('body')
@@ -211,26 +241,46 @@ def process_data():
             return redirect(url_for('protein_data'))
     return render_template("index.html")
 
-@app.route('/protein-data', methods=['GET', 'POST'])
+@app.route('/protein-data/', methods=['GET', 'POST'])
 def protein_data():
     if request.method == 'POST':
         codon = request.form.get('codon', '')
         codon_count = session.get('codon_count')
-        searchedCodon = search_codon(codon_count, codon)
-        
+        aminoAcid = session.get('aminoAcid')
+        data_types = session.get('dataType')
+        codon_idx = [i for i, x in enumerate(aminoAcid) if x == codon]
+        searchedCodon = aminoAcid.count(codon)
+        aminoAcid_copy = aminoAcid
         new_filepath = os.path.join('templates', "protein-data.html")
         with open(new_filepath, 'r') as file:
             html_content = file.read()
+
+        for index in codon_idx:
+            if index < len(aminoAcid_copy):
+                aminoAcid_copy[index] = f'<span style="color: red;">{aminoAcid_copy[index]}</span>'
+        highlighted_str = ''.join(aminoAcid_copy)
+        highlighted_list = []
+        highlighted_list.append(highlighted_str)
         
         soup = BeautifulSoup(html_content, 'html.parser')
+        content_div_separated_aa = soup.find('label', string='Separated Amino Acid Structure').find_next('div', {'class': 'content'})
+        # Clear previous content in the div
+        content_div_separated_aa.clear()
 
+        # Create a new tag for the modified content
+        modified_content_tag = soup.new_tag('span')
+        modified_content_tag.append(BeautifulSoup(highlighted_str, 'html.parser'))
+
+        # Append the modified content to the div
+        content_div_separated_aa.append(modified_content_tag)
         existing_results = soup.find_all(class_='codon-result')
         for result in existing_results:
             result.extract()
+            
         
         codon_search_result = soup.new_tag('p')
         codon_search_result['class'] = "codon-result"
-        codon_search_result.string = f"there are {searchedCodon} {codon} sequence in this protein strand!"
+        codon_search_result.string = f"there are {searchedCodon} {codon} sequence in this protein strand! found in indexes {codon_idx}"
 
         existing_element = soup.find(class_='search-bar')
         if existing_element:
