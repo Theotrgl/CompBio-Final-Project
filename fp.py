@@ -1,10 +1,7 @@
 from flask import Flask, request, render_template, redirect, url_for, session
 import nglview as nv
-from Bio import PDB
-from Bio.PDB import PDBParser, is_aa, PPBuilder
-from Bio.SeqUtils import seq1
-from Bio.PDB import DSSP
-from Bio.SeqRecord import SeqRecord
+from Bio import PDB, SeqIO
+from Bio.PDB import PDBParser, is_aa
 from bs4 import BeautifulSoup
 import os
 app = Flask(__name__, template_folder="templates", static_folder="static_files")
@@ -35,6 +32,21 @@ def amino_acid_to_codon():
     }
     return codon_table
 
+def change_amino_acid_format(codon_sequence):
+    three_letter_to_one_letter = {
+    'ALA': 'A', 'ARG': 'R', 'ASN': 'N', 'ASP': 'D', 'CYS': 'C',
+    'GLN': 'Q', 'GLU': 'E', 'GLY': 'G', 'HIS': 'H', 'ILE': 'I',
+    'LEU': 'L', 'LYS': 'K', 'MET': 'M', 'PHE': 'F', 'PRO': 'P',
+    'SER': 'S', 'THR': 'T', 'TRP': 'W', 'TYR': 'Y', 'VAL': 'V'
+}
+
+
+    amino_acid_sequence = ''
+    for i in range(0, len(codon_sequence), 3):
+        codon = codon_sequence[i:i + 3]
+        amino_acid_sequence += three_letter_to_one_letter.get(codon, '')
+
+    return amino_acid_sequence
 
 def count_codons(sequence):
     codon_table = amino_acid_to_codon()  # Use the previously defined amino_acid_to_codon function
@@ -98,23 +110,21 @@ def extract_protein_title(file_path):
                 titles.append(title)
 
     return titles if titles else None
-
-def extract_protein_chains(structure):
-    protein_sequences = {}  # Dictionary to store sequences for each chain
+def extract_chain_from_pdb(structure, chain_id):
 
     for model in structure:
         for chain in model:
-            chain_id = chain.id
-            if chain_id in ['A', 'B', 'C']:  # Filter for chains A, B, and C
-                if chain_id not in protein_sequences:
-                    protein_sequences[chain_id] = ''
+            if chain.id == chain_id:
+                # Collect residues to form the sequence
+                residues = [residue.get_resname() for residue in chain if residue.get_id()[0] == ' ']
+                sequence = ''.join(residues)
+                sequence = change_amino_acid_format(sequence)
+                # Convert the sequence to FASTA format
+                fasta_seq = f">{chain.id}\n{sequence}"
+                return fasta_seq
 
-                for residue in chain:
-                    if residue.get_id()[0] == ' ' and residue.get_resname() != "HOH":
-                        protein_sequences[chain_id] += residue.get_resname()
-
-    return protein_sequences
-
+    # If the chain is not found
+    return None
 @app.route('/', methods=['GET', 'POST'])
 def process_data():
     pdb_id = ''
@@ -133,10 +143,9 @@ def process_data():
             structure = parser.get_structure(pdb_id.upper(), file_path)
             molecular_weight = calculate_molecular_mass(structure)
             amino_acid = extract_amino_acid_sequence(structure)
-            protein = extract_protein_chains(structure)
-            protein_A = protein.get('A', None)
-            protein_B = protein.get('B', None)
-            protein_C = protein.get('C', None)
+            protein_A = extract_chain_from_pdb(structure, 'A')
+            protein_B = extract_chain_from_pdb(structure, 'B')
+            protein_C = extract_chain_from_pdb(structure, 'C')
             pdb_title = extract_protein_title(file_path)
             mw = "{:.2f}".format(molecular_weight)
             codons = list(set(amino_acid))
@@ -169,7 +178,7 @@ def process_data():
 
             container_div = soup.new_tag('div', **{'class':'container'})
 
-            data_types = ['Title', 'ID', 'Molecular Weight', 'Polypeptide Chain A', 'Polypeptide Chain B', 'Polypeptide Chain C','Separated Amino Acid Structure', 'Existing Codons']
+            data_types = ['ID','Title', 'Molecular Weight', 'Polypeptide Chain A', 'Polypeptide Chain B', 'Polypeptide Chain C','Amino Acid Structure', 'Existing Codons']
             session['dataType'] = data_types
             for idx, data_type in enumerate(data_types, start=1):
                 accordion_div = soup.new_tag('div', **{'class':'accordion'})
@@ -193,8 +202,8 @@ def process_data():
                 elif data_type == 'Polypeptide Chain C':
                     content_div.string = f'{protein_C}'
                 elif data_type == 'Molecular Weight':
-                    content_div.string = f'{mw}'
-                elif data_type == 'Separated Amino Acid Structure':
+                    content_div.string = f'{mw, "Da"}'
+                elif data_type == 'Amino Acid Structure':
                     content_div.string = f'{amino_acid}'
                 elif data_type == 'Existing Codons':
                     content_div.string = f'{codons}'
@@ -259,11 +268,9 @@ def protein_data():
             if index < len(aminoAcid_copy):
                 aminoAcid_copy[index] = f'<span style="color: red;">{aminoAcid_copy[index]}</span>'
         highlighted_str = ''.join(aminoAcid_copy)
-        highlighted_list = []
-        highlighted_list.append(highlighted_str)
         
         soup = BeautifulSoup(html_content, 'html.parser')
-        content_div_separated_aa = soup.find('label', string='Separated Amino Acid Structure').find_next('div', {'class': 'content'})
+        content_div_separated_aa = soup.find('label', string='Amino Acid Structure').find_next('div', {'class': 'content'})
         # Clear previous content in the div
         content_div_separated_aa.clear()
 

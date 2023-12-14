@@ -9,11 +9,6 @@
     <script src="{{ url_for('static', filename='function.js') }}"></script>
 </head>
 <body>
-    <!-- <h1>Welcome To </h1>
-    <form action="/" method="post">
-        <input type="text" name="input_name" placeholder="Enter data..." />
-        <button type="submit">Submit</button>
-    </form> -->
     <nav>
         <h1>Protein Visualization</h1>
         <ul>
@@ -25,6 +20,7 @@
         {% if error_message %}
             <p>{{ error_message }}</p>
         {% endif %}
+        <p class="pdb-link">Please browse through the available list of pdb ID's from <a href="https://www.rcsb.org/#Category-search">this</a> website</p>
         <button>Click Here</button>
     </div>
     <div class="overlay">
