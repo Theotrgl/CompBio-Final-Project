@@ -29,6 +29,19 @@ nav ul li {
     transition: all 0.5s ease;
 }
 
+nav ul li::before {
+    content: attr(data-student-id); /* Display student ID */
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0; /* Initially hidden */
+    transition: opacity 0.5s ease; /* Smooth transition */
+}
+
+nav ul li:hover::before {
+    opacity: 1; /* Show on hover */
+}
+
 nav ul li:hover {
     color: #000;
 }
@@ -43,6 +56,15 @@ nav ul li:last-child {
     background-color: #e7e7f6;
     border-radius: 5px;
     z-index: 2;
+}
+
+.container p {
+    justify-content: center;
+    text-align: center;
+}
+
+.error_message {
+    background-color: red;
 }
 
 button {

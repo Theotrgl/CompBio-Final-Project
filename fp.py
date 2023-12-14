@@ -254,11 +254,12 @@ def process_data():
 def protein_data():
     if request.method == 'POST':
         codon = request.form.get('codon', '')
+        codon = codon.upper()
         codon_count = session.get('codon_count')
         aminoAcid = session.get('aminoAcid')
         data_types = session.get('dataType')
         codon_idx = [i for i, x in enumerate(aminoAcid) if x == codon]
-        searchedCodon = aminoAcid.count(codon)
+        searchedCodon = aminoAcid.count(codon.upper())
         aminoAcid_copy = aminoAcid
         new_filepath = os.path.join('templates', "protein-data.html")
         with open(new_filepath, 'r') as file:
@@ -284,10 +285,14 @@ def protein_data():
         for result in existing_results:
             result.extract()
             
-        
-        codon_search_result = soup.new_tag('p')
-        codon_search_result['class'] = "codon-result"
-        codon_search_result.string = f"there are {searchedCodon} {codon} sequence in this protein strand! found in indexes {codon_idx}"
+        if (searchedCodon == 0):
+            codon_search_result = soup.new_tag('p')
+            codon_search_result['class'] = "codon-result"
+            codon_search_result.string = f"{codon} sequence cannot be found in this protein stand"
+        else:
+            codon_search_result = soup.new_tag('p')
+            codon_search_result['class'] = "codon-result"
+            codon_search_result.string = f"There are {searchedCodon} {codon} sequence in this protein strand! found in indexes {codon_idx}"
 
         existing_element = soup.find(class_='search-bar')
         if existing_element:
