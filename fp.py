@@ -4,6 +4,9 @@ from Bio import PDB, SeqIO
 from Bio.PDB import PDBParser, is_aa
 from bs4 import BeautifulSoup
 import os
+import time
+import tracemalloc
+import psutil
 app = Flask(__name__, template_folder="templates", static_folder="static_files")
 app.secret_key = 'aksjfgaisfg917f19vf197vbsbfbf1s9VF(!&U(SB1u9bsf9B!F(bs)))'
 def amino_acid_to_codon():
