@@ -1,3 +1,4 @@
+# Import Necessary Modules
 from flask import Flask, request, render_template, redirect, url_for, session
 import nglview as nv
 from Bio import PDB, SeqIO
@@ -7,8 +8,12 @@ import os
 import time
 import tracemalloc
 import psutil
+# Initialize flask app
 app = Flask(__name__, template_folder="templates", static_folder="static_files")
 app.secret_key = 'aksjfgaisfg917f19vf197vbsbfbf1s9VF(!&U(SB1u9bsf9B!F(bs)))'
+
+#Functions for extracting and manipulating protein data
+
 def amino_acid_to_codon():
     codon_table = {
         'ALA': ['GCU', 'GCC', 'GCA', 'GCG'],
@@ -31,11 +36,12 @@ def amino_acid_to_codon():
         'TRP': ['UGG'],
         'TYR': ['UAU', 'UAC'],
         'VAL': ['GUU', 'GUC', 'GUA', 'GUG'],
-        'STOP': ['UAA', 'UAG', 'UGA']  # Stop codons
+        'STOP': ['UAA', 'UAG', 'UGA'] 
     }
     return codon_table
-
+#Convert Codon triplet to single alphabet amino acid notation
 def change_amino_acid_format(codon_sequence):
+    #Initializes dictionary for matching with codon sequence
     three_letter_to_one_letter = {
     'ALA': 'A', 'ARG': 'R', 'ASN': 'N', 'ASP': 'D', 'CYS': 'C',
     'GLN': 'Q', 'GLU': 'E', 'GLY': 'G', 'HIS': 'H', 'ILE': 'I',
@@ -43,7 +49,7 @@ def change_amino_acid_format(codon_sequence):
     'SER': 'S', 'THR': 'T', 'TRP': 'W', 'TYR': 'Y', 'VAL': 'V'
 }
 
-
+    #Reads every triplet (codon triplet) and matches against dictionary
     amino_acid_sequence = ''
     for i in range(0, len(codon_sequence), 3):
         codon = codon_sequence[i:i + 3]
@@ -51,9 +57,9 @@ def change_amino_acid_format(codon_sequence):
 
     return amino_acid_sequence
 
+#Counts the unique codon/amino acid in the sequence
 def count_codons(sequence):
-    codon_table = amino_acid_to_codon()  # Use the previously defined amino_acid_to_codon function
-
+    codon_table = amino_acid_to_codon()  
     codon_count = {}
     for amino_acid in sequence:
         possible_codons = codon_table.get(amino_acid, [])
@@ -68,7 +74,7 @@ def count_codons(sequence):
     return codon_count
 
 
-
+#Calculate molecular mass by adding the existing atoms found in the PDB file
 def calculate_molecular_mass(structure):
     atomic_weights = {
         'C': 12.011, 'N': 14.007, 'O': 15.999, 'S': 32.06, 'H': 1.0078  
@@ -85,6 +91,7 @@ def calculate_molecular_mass(structure):
 
     return molecular_mass
 
+#Extracting amino acid using PDB.is_aa() function
 def extract_amino_acid_sequence(structure):
     amino_acids = []
 
@@ -102,6 +109,7 @@ def extract_amino_acid_sequence(structure):
 
     return separated_amino_acids
 
+#Extract Title of protein strand
 def extract_protein_title(file_path):
     titles = []
     with open(file_path, 'r') as file:
@@ -113,6 +121,8 @@ def extract_protein_title(file_path):
                 titles.append(title)
 
     return titles if titles else None
+
+#Extract polypeptide chain from PDB file 
 def extract_chain_from_pdb(structure, chain_id):
 
     for model in structure:
@@ -122,26 +132,28 @@ def extract_chain_from_pdb(structure, chain_id):
                 residues = [residue.get_resname() for residue in chain if residue.get_id()[0] == ' ']
                 sequence = ''.join(residues)
                 sequence = change_amino_acid_format(sequence)
-                # Convert the sequence to FASTA format
+                # Convert the sequence to FASTA format to match clustal omega template
                 fasta_seq = f">{chain.id}\n{sequence}"
                 return fasta_seq
 
-    # If the chain is not found
     return None
+#Create index page
 @app.route('/', methods=['GET', 'POST'])
 def process_data():
     pdb_id = ''
     template_folder = 'templates'
-    
+    #Pre-renders the /protein-data page based on user input
     if request.method == 'POST':
-        pdb_id = request.form['input_name']  # Access form data for POST request
-        # Process the submitted data or perform actions
+        #Fetching user input data
+        pdb_id = request.form['input_name']  
+        #Loading /protein-data page based on user input (PDB ID)
         file_path = f"PDB_Files/{pdb_id.lower()}.pdb"
+        #Error checks for valid PDB ID
         if not os.path.exists(file_path):
-            # Append an error message to the rendered template
             error_message = "File not found. Please enter a valid PDB ID."
             return render_template("index.html", error_message=error_message)
         else:
+            #Initialize function values into variables
             parser = PDBParser()
             structure = parser.get_structure(pdb_id.upper(), file_path)
             molecular_weight = calculate_molecular_mass(structure)
@@ -153,18 +165,24 @@ def process_data():
             mw = "{:.2f}".format(molecular_weight)
             codons = list(set(amino_acid))
             codon_count = count_codons(amino_acid)
+
+            #Add session data to carry over to other pages
             session['codon_count'] = codon_count
             session['aminoAcid'] = amino_acid
-            # Handle the form submission here
+
+            #Use nglview to display PDB structure
             view = nv.show_structure_file(file_path)
+            #Initialize PDBParser()
             parser = PDBParser()
+            #Fetches pdb data from PDB_Files folder
             structure = parser.get_structure(pdb_id.upper(), file_path)
             viz = structure
-            view.add_component(file_path)  # Add the component again to ensure it's loaded
+            view.add_component(file_path)
             filepath = os.path.join(template_folder, "new_html_file.html")
             new_filepath = os.path.join(template_folder, "protein-data.html")
             nv.write_html(filepath, [view])
             print(f"Visualization saved to {filepath}")
+            #Open new html file for /protein-data page and modify using soup
             with open(filepath, 'r') as file:
                 html_content = file.read()
             
@@ -178,7 +196,7 @@ def process_data():
             head_tag = soup.find('head')
             if head_tag:
                 head_tag.append(css_link)
-
+            
             container_div = soup.new_tag('div', **{'class':'container'})
 
             data_types = ['ID','Title', 'Molecular Weight', 'Polypeptide Chain A', 'Polypeptide Chain B', 'Polypeptide Chain C','Amino Acid Structure', 'Existing Codons']
